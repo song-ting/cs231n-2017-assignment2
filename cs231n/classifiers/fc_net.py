@@ -292,10 +292,11 @@ class FullyConnectedNet(object):
             else:  # 前L-1层反向传播
                 dout, grads['W%s' % i], grads['b%s' % i] = affine_relu_backward(dout, caches[i - 1])
 
-            # 加入L2 regularization loss
-            loss += 0.5 * self.reg * np.sum(self.params['W%s' % i] ** 2)
-            # 加入L2 regularization梯度
-            grads['W%s' % i] += self.reg * self.params['W%s' % i]
+            if self.reg == 0:  # L2 regularization
+                # L2 regularization loss
+                loss += 0.5 * self.reg * np.sum(self.params['W%s' % i] ** 2)
+                # L2 regularization梯度
+                grads['W%s' % i] += self.reg * self.params['W%s' % i]
 
         ############################################################################
         #                             END OF YOUR CODE                             #

@@ -65,8 +65,8 @@ def sgd_momentum(w, dw, config=None):
     # TODO: Implement the momentum update formula. Store the updated value in #
     # the next_w variable. You should also use and update the velocity v.     #
     ###########################################################################
-    mu = config.get('momentum')
-    lr = config.get('learning_rate')
+    mu = config['momentum']
+    lr = config['learning_rate']
     v = mu * v - lr * dw  # 累积梯度
     next_w = w + v  # 用累积的梯度更新weight
     ###########################################################################
@@ -101,7 +101,13 @@ def rmsprop(x, dx, config=None):
     # in the next_x variable. Don't forget to update cache value stored in    #
     # config['cache'].                                                        #
     ###########################################################################
-    pass
+    cache = config['cache']
+    dr = config['decay_rate']
+    lr = config['learning_rate']
+    epsilon = config['epsilon']
+    cache = dr * cache + (1 - dr) * dx ** 2
+    next_x = x - lr * dx / (np.sqrt(cache) + epsilon)
+    config['cache'] = cache
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -138,7 +144,30 @@ def adam(x, dx, config=None):
     # the next_x variable. Don't forget to update the m, v, and t variables   #
     # stored in config.                                                       #
     ###########################################################################
-    pass
+    lr = config['learning_rate']
+    beta1 = config['beta1']
+    beta2 = config['beta2']
+    epsilon = config['epsilon']
+    m = config['m']
+    v = config['v']
+    t = config['t'] + 1 # 更新t
+
+    # 更新m, v
+    m = beta1 * m + (1 - beta1) * dx
+    v = beta2 * v + (1 - beta2) * dx ** 2
+
+    # bais-corrected 偏置（bais）矫正
+    mt = m / (1 - beta1 ** t)
+    vt = v / (1 - beta2 ** t)
+
+    # 更新weight
+    next_x = x - lr * mt / (np.sqrt(vt) + epsilon)
+
+    # 保存m, v, t
+    config['m'] = m
+    config['v'] = v
+    config['t'] = t
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################

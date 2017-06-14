@@ -249,12 +249,13 @@ class FullyConnectedNet(object):
         ############################################################################
         L = self.num_layers
         out = X
-        caches = []
+        caches = []  # len(caches) = L
 
-        for i in range(1, L):
+        for i in range(1, L):  # {affine - [batch norm] - relu - [dropout]} x (L - 1) 前L-1层前向传播
             out, affine_rulu_cache = affine_relu_forward(out, self.params['W%s' % i], self.params['b%s' % i])
             caches.append(affine_rulu_cache)
 
+        # affine 第L层前向传播
         scores, affine_cache = affine_forward(out, self.params['W%s' % L], self.params['b%s' % L])
         caches.append(affine_cache)
 
@@ -280,17 +281,20 @@ class FullyConnectedNet(object):
         # automated tests, make sure that your L2 regularization includes a factor #
         # of 0.5 to simplify the expression for the gradient.                      #
         ############################################################################
+        # softmax 计算data loss并反向传播
         loss, dscores = softmax_loss(scores, y)
         dout = dscores
 
-        for i in range(L, 0, -1):
-            if i == L:
+        for i in range(L, 0, -1):  # L层反向传播
+            if i == L:  # 第L层反向传播
                 dout, grads['W%s' % i], grads['b%s' % i] = affine_backward(dout, caches[i - 1])
 
-            else:
+            else:  # 前L-1层反向传播
                 dout, grads['W%s' % i], grads['b%s' % i] = affine_relu_backward(dout, caches[i - 1])
 
+            # 加入L2 regularization loss
             loss += 0.5 * self.reg * np.sum(self.params['W%s' % i] ** 2)
+            # 加入L2 regularization梯度
             grads['W%s' % i] += self.reg * self.params['W%s' % i]
 
         ############################################################################

@@ -65,14 +65,16 @@ def sgd_momentum(w, dw, config=None):
     # TODO: Implement the momentum update formula. Store the updated value in #
     # the next_w variable. You should also use and update the velocity v.     #
     ###########################################################################
-    pass
+    mu = config.get('momentum')
+    lr = config.get('learning_rate')
+    v = mu * v - lr * dw  # 累积梯度
+    next_w = w + v  # 用累积的梯度更新weight
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
     config['velocity'] = v
 
     return next_w, config
-
 
 
 def rmsprop(x, dx, config=None):

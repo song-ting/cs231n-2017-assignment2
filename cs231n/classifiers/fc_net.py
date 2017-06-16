@@ -181,13 +181,17 @@ class FullyConnectedNet(object):
         # parameters should be initialized to zero.                                #
         ############################################################################
         for i in range(1, self.num_layers + 1):
-            if i == 1:
-                self.params['W%s' % i] = weight_scale * np.random.randn(input_dim, hidden_dims[0])
-                self.params['b%s' % i] = np.random.randn(hidden_dims[0])
-            elif i < self.num_layers:
-                self.params['W%s' % i] = weight_scale * np.random.randn(hidden_dims[i - 2], hidden_dims[i - 1])
-                self.params['b%s' % i] = np.random.randn(hidden_dims[i - 1])
-            elif i == self.num_layers:
+            if i < self.num_layers:  # {affine - [batch norm] - relu - [dropout]} x (L - 1)
+                if i == 1:
+                    self.params['W%s' % i] = weight_scale * np.random.randn(input_dim, hidden_dims[0])
+                    self.params['b%s' % i] = np.random.randn(hidden_dims[0])
+                else:
+                    self.params['W%s' % i] = weight_scale * np.random.randn(hidden_dims[i - 2], hidden_dims[i - 1])
+                    self.params['b%s' % i] = np.random.randn(hidden_dims[i - 1])
+                if use_batchnorm:
+                    self.params['gamma%s' % i] = np.ones(hidden_dims[i - 1])
+                    self.params['beta%s' % i] = np.zeros(hidden_dims[i - 1])
+            elif i == self.num_layers:  # affine - softmax
                 self.params['W%s' % i] = weight_scale * np.random.randn(hidden_dims[-1], num_classes)
                 self.params['b%s' % i] = np.random.randn(num_classes)
 
@@ -252,12 +256,18 @@ class FullyConnectedNet(object):
         caches = []  # len(caches) = L
 
         for i in range(1, L):  # {affine - [batch norm] - relu - [dropout]} x (L - 1) 前L-1层前向传播
-            out, affine_rulu_cache = affine_relu_forward(out, self.params['W%s' % i], self.params['b%s' % i])
-            caches.append(affine_rulu_cache)
+            if self.use_batchnorm:
+                out, fc_bn_relu_cache = affine_bn_relu_forward(out, self.params['W%s' % i], self.params['b%s' % i],
+                                                               self.params['gamma%s' % i],
+                                                               self.params['beta%s' % i], self.bn_params[i - 1])
+                caches.append(fc_bn_relu_cache)
+            else:
+                out, fc_rulu_cache = affine_relu_forward(out, self.params['W%s' % i], self.params['b%s' % i])
+                caches.append(fc_rulu_cache)
 
         # affine 第L层前向传播
-        scores, affine_cache = affine_forward(out, self.params['W%s' % L], self.params['b%s' % L])
-        caches.append(affine_cache)
+        scores, fc_cache = affine_forward(out, self.params['W%s' % L], self.params['b%s' % L])
+        caches.append(fc_cache)
 
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -290,7 +300,12 @@ class FullyConnectedNet(object):
                 dout, grads['W%s' % i], grads['b%s' % i] = affine_backward(dout, caches[i - 1])
 
             else:  # 前L-1层反向传播
-                dout, grads['W%s' % i], grads['b%s' % i] = affine_relu_backward(dout, caches[i - 1])
+                if self.use_batchnorm:
+                    dout, grads['W%s' % i], grads['b%s' % i], grads['gamma%s' % i], grads[
+                        'beta%s' % i] = affine_bn_relu_backward(dout, caches[i - 1])
+
+                else:
+                    dout, grads['W%s' % i], grads['b%s' % i] = affine_relu_backward(dout, caches[i - 1])
 
             if self.reg == 0:  # L2 regularization
                 # L2 regularization loss

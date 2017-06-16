@@ -261,6 +261,10 @@ class FullyConnectedNet(object):
                                                                self.params['gamma%s' % i],
                                                                self.params['beta%s' % i], self.bn_params[i - 1])
                 caches.append(fc_bn_relu_cache)
+            elif self.use_dropout:
+                out, fc_relu_dropout_cache = affine_relu_dropout_forward(out, self.params['W%s' % i],
+                                                                         self.params['b%s' % i], self.dropout_param)
+                caches.append(fc_relu_dropout_cache)
             else:
                 out, fc_rulu_cache = affine_relu_forward(out, self.params['W%s' % i], self.params['b%s' % i])
                 caches.append(fc_rulu_cache)
@@ -303,11 +307,13 @@ class FullyConnectedNet(object):
                 if self.use_batchnorm:
                     dout, grads['W%s' % i], grads['b%s' % i], grads['gamma%s' % i], grads[
                         'beta%s' % i] = affine_bn_relu_backward(dout, caches[i - 1])
+                elif self.use_dropout:
+                    dout, grads['W%s' % i], grads['b%s' % i] = affine_relu_dropout_backward(dout, caches[i - 1])
 
                 else:
                     dout, grads['W%s' % i], grads['b%s' % i] = affine_relu_backward(dout, caches[i - 1])
 
-            if self.reg == 0:  # L2 regularization
+            if self.reg != 0:  # L2 regularization
                 # L2 regularization loss
                 loss += 0.5 * self.reg * np.sum(self.params['W%s' % i] ** 2)
                 # L2 regularization梯度

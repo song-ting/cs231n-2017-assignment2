@@ -108,12 +108,13 @@ class TwoLayerNet(object):
         # of 0.5 to simplify the expression for the gradient.                      #
         ############################################################################
         loss, dscores = softmax_loss(scores, y)
-        loss += 0.5 * self.reg * (np.sum(W1 ** 2) + np.sum(W2 ** 2))
         daffine_relu_out, grads['W2'], grads['b2'] = affine_backward(dscores, affine_cache)
-        grads['W2'] += self.reg * W2  # shape (H, C)
-
         _, grads['W1'], grads['b1'] = affine_relu_backward(daffine_relu_out, affine_relu_cache)
-        grads['W1'] += self.reg * W1  # shape (D, H)
+
+        if self.reg != 0.0:  # L2 regularization
+            loss += 0.5 * self.reg * (np.sum(W1 ** 2) + np.sum(W2 ** 2))
+            grads['W2'] += self.reg * W2  # shape (H, C)
+            grads['W1'] += self.reg * W1  # shape (D, H)
 
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -313,7 +314,7 @@ class FullyConnectedNet(object):
                 else:
                     dout, grads['W%s' % i], grads['b%s' % i] = affine_relu_backward(dout, caches[i - 1])
 
-            if self.reg != 0:  # L2 regularization
+            if self.reg != 0.0:  # L2 regularization
                 # L2 regularization loss
                 loss += 0.5 * self.reg * np.sum(self.params['W%s' % i] ** 2)
                 # L2 regularization梯度
